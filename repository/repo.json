@@ -1,0 +1,9 @@
+{
+    "name": "Spyfall",
+    "description": "Spyfall for telegram, based on https://boardgamegeek.com/boardgame/166384/spyfall"
+    "version": "1.1",
+    "default_enable": ["Spyfall"],
+    "homepage": "https://github.com/datamachine/telegram-pybot-spyfall",
+    "repo": "https://github.com/datamachine/telegram-pybot-spyfall.git",
+    "branch": "master"
+}
