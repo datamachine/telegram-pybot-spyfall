@@ -2,12 +2,11 @@ import plugintypes
 
 
 class SpyfallPlugin(plugintypes.TelegramPlugin):
-    patterns = [
-        "^!spyfall (join)", "join_game",
-        "^!spyfall (start)", "start_game",
-        "^!spyfall (end)", "end_game",
-
-    ]
+    patterns = {
+        "^!spyfall (join)": "join_game",
+        "^!spyfall (start)": "start_game",
+        "^!spyfall (end)": "end_game",
+    }
 
     usage = [
         "!spyfall join: Join a new game.",
