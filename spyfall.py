@@ -72,12 +72,15 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
     def start_game(self, msg, matches):
         chat_id = msg.dest.id
 
+
+
         if self.games[chat_id]['isStarted'] == True:
             return "Game already started"
         else:
             # get our role
             category = self.get_category(msg)
             get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
+            get_first = random.choice(list(self.games[chat_id]['players'].keys()))
 
             for k in self.games[chat_id]['players']:
                 if k.id == get_spy.id:
@@ -91,8 +94,9 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
             # set game to started
             self.games[chat_id]['isStarted'] = True
+            game_started = ("Game started: Frist up: {}".format(get_first.username))
 
-            return "Game started"
+            return game_started 
 
     def end_game(self, msg, matches):
         chat_id = msg.dest.id
