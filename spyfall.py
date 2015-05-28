@@ -13,6 +13,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         "^!spyfall (games)": "list_games",
         "^!spyfall (join)": "join_game",
         "^!spyfall (start)": "start_game",
+        "^!spyfall (status)": "game_status",
         "^!spyfall (end)": "end_game",
     }
 
@@ -20,6 +21,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         "!spyfall games: List all the games!",
         "!spyfall join: Join a new game.",
         "!spyfall start: Start game a game with 3+ people.",
+        "!spyfall status: Check on the status of a game in the chat room",
         "!spyfall end: End current game.",
     ]
 
@@ -29,36 +31,36 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                     'players': {}
                 }
 
-    player_data = {
-                    'isSpy': False,
-                    'role': 'none',
-                  }
-
     def join_game(self, msg, matches):
         chat_id = msg.dest.id
         user_id = msg.src.username
         peer_id = msg.src
         joined_game = "%s has joined the game " % user_id
 
-        print(peer_id)
+        try:
 
-        def join_game():
-            self.games[chat_id]['players'][peer_id] = self.player_data
+            if chat_id in self.games:
+                if self.games[chat_id]['isStarted'] == True:
+                    return "Cannot join game, game already started"
+                else:
+                   # go herea
+                   print("We made it to the else")
+                   if peer_id in self.games[chat_id]:
+                       return "You've already joined the game!"
+                   else:
 
-        if chat_id in self.games:
-            # go herea
-            if peer_id in self.games[chat_id]:
-                return "You've already joined the game!"
+                       self.games[chat_id]['players'][peer_id] = {}
+                       return joined_game
             else:
-                join_game()
-                return joined_game 
+                self.create_game(msg)
+                self.games[chat_id]['players'][peer_id] = {}
+                return joined_game
 
-        else:
+        except KeyError:
+            print("We made it here")
             self.create_game(msg)
-            join_game()
+            self.games[chat_id]['players'][peer_id] = {}
             return joined_game
-
-        return
 
     def create_game(self, msg):
        chat_id = msg.dest.id
@@ -74,33 +76,56 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
     def start_game(self, msg, matches):
         chat_id = msg.dest.id
-        
-        # get our role
-
-        category = self.get_category(msg)
-
-        for k in self.games[chat_id]['players']:
-            role = self.get_role(msg, category)
-            self.games[chat_id]['players'][k]['role'] = role
-
-        get_spy = random.sample(self.games[chat_id]['players'].keys(),1)
-        print("You'e a spy! {}, key values: {}".format(get_spy[0], self.games[chat_id]['players'].keys()))  
-
-        for k in self.games[chat_id]['players']:
-            if k.username == get_spy:
-                self.games[chat_id]['players'][k.id]['isSpy'] = True
-                k.send_msg("You're a spy!")
-            else:
-                role = self.games[chat_id]['players'][k]['role']
-                user_data = ("You're a {} \nLocation: {}".format(role, category))
-                k.send_msg(user_data)
         pprint.pprint(self.games[chat_id])
 
-        return "game started"
+        if self.games[chat_id]['isStarted'] == True:
+            return "Game already started"
+        else:
+            # get our role
+            category = self.get_category(msg)
+            get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
+            print("You'e a spy! {}".format(get_spy.username))  
+
+            for k in self.games[chat_id]['players']:
+                if k.id == get_spy.id:
+                    self.games[chat_id]['players'][k]['role'] = "spy"
+                    k.send_msg("You're a spy!")
+                else:
+                    role = self.get_role(msg, category)
+                    self.games[chat_id]['players'][k]['role'] = role
+                    user_data = ("You're a {} \nLocation: {}".format(role, category))
+                    k.send_msg(user_data)
+
+            # set game to started
+            self.games[chat_id]['isStarted'] = True
+
+            return "Game started"
 
     def end_game(self, msg, matches):
-        self.games.pop(chat_id, None)
-        return "game stopped"
+        chat_id = msg.dest.id
+
+        try: 
+            if any(self.games[chat_id]):
+                if self.games[chat_id]['isStarted'] == True:
+                   self.games.pop(chat_id, None)
+                   return "Game stopped"
+                else:
+                    return "Game has not started"
+        except KeyError:
+            return "Game has not started"
+
+    def game_status(self, msg, matches):
+        chat_id = msg.dest.id
+
+        try:
+            if chat_id in self.games:
+                if self.games[chat_id]['isStarted'] == True:
+                    return "Game is active."
+
+            else:
+                return "There is no game currently."
+        except:
+            return "There is no game currently."
 
     def get_role(self, msg, category):
 
