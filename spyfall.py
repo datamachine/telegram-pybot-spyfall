@@ -4,6 +4,7 @@ import os
 import random
 import json
 import sys
+import pprint
 
 
 
@@ -16,6 +17,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
     }
 
     usage = [
+        "!spyfall games: List all the games!",
         "!spyfall join: Join a new game.",
         "!spyfall start: Start game a game with 3+ people.",
         "!spyfall end: End current game.",
@@ -82,19 +84,21 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
             self.games[chat_id]['players'][k]['role'] = role
 
         get_spy = random.sample(self.games[chat_id]['players'].keys(),1)
+        print("You'e a spy! {}, key values: {}".format(get_spy[0], self.games[chat_id]['players'].keys()))  
 
         for k in self.games[chat_id]['players']:
-            if k.id == get_spy:
+            if k.username == get_spy:
                 self.games[chat_id]['players'][k.id]['isSpy'] = True
                 k.send_msg("You're a spy!")
             else:
                 role = self.games[chat_id]['players'][k]['role']
                 user_data = ("You're a {} \nLocation: {}".format(role, category))
                 k.send_msg(user_data)
+        pprint.pprint(self.games[chat_id])
 
         return "game started"
 
-    def end_game(self, msg):
+    def end_game(self, msg, matches):
         self.games.pop(chat_id, None)
         return "game stopped"
 
