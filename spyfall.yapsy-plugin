@@ -6,4 +6,4 @@ Module = spyfall
 Author = Vincent Castellano & Ryan Lewon
 Version = 1.0
 Website = https://github.com/datamachine/telegram-pybot-spyfall
-Description = Spyfall for telegram, based on https://boardgamegeek.com/boardgame/166384/spyfall
+Description = Spyfall for telegram.
