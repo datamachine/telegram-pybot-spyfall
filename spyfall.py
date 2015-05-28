@@ -64,15 +64,13 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
        if chat_id in self.games:
            # add user to the chat_id
            # games[chat_id][user] = role
+           return "Game already created"
        else:
            self.games[chat_id] = self.game_data
-
-       return "created game" 
+           return "created game" 
 
     def start_game(self, msg, matches):
         chat_id = msg.dest.id
-
-
 
         if self.games[chat_id]['isStarted'] == True:
             return "Game already started"
@@ -81,22 +79,26 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
             category = self.get_category(msg)
             get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
             get_first = random.choice(list(self.games[chat_id]['players'].keys()))
+            
+            if len(self.games[chat_id]['players'].keys()) >= 3:
+                for k in self.games[chat_id]['players']:
+                    if k.id == get_spy.id:
+                        self.games[chat_id]['players'][k]['role'] = "spy"
+                        k.send_msg("You're a spy!")
+                    else:
+                        role = self.get_role(msg, category)
+                        self.games[chat_id]['players'][k]['role'] = role
+                        user_data = ("You're a {} \nLocation: {}".format(role, category))
+                        k.send_msg(user_data)
 
-            for k in self.games[chat_id]['players']:
-                if k.id == get_spy.id:
-                    self.games[chat_id]['players'][k]['role'] = "spy"
-                    k.send_msg("You're a spy!")
-                else:
-                    role = self.get_role(msg, category)
-                    self.games[chat_id]['players'][k]['role'] = role
-                    user_data = ("You're a {} \nLocation: {}".format(role, category))
-                    k.send_msg(user_data)
+                # set game to started
+                self.games[chat_id]['isStarted'] = True
+                game_started = ("Game started: Frist up: {}".format(get_first.username))
 
-            # set game to started
-            self.games[chat_id]['isStarted'] = True
-            game_started = ("Game started: Frist up: {}".format(get_first.username))
-
-            return game_started 
+                return game_started 
+            else:
+                players_needed = ("Not enough to start, need {}".format(3 - len(self.games[chat_id]['players'].keys())))
+                return players_needed 
 
     def end_game(self, msg, matches):
         chat_id = msg.dest.id
