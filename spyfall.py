@@ -8,12 +8,12 @@ import sys
 
 
 class SpyfallPlugin(plugintypes.TelegramPlugin):
-    patterns = [
-        "^!spyfall$",
-        "^!spyfall (join)", "join_game",
-        "^!spyfall (start)", "start_game",
-        "^!spyfall (end)", "end_game",
-    ]
+    patterns = {
+        "^!spyfall (games)": "list_games",
+        "^!spyfall (join)": "join_game",
+        "^!spyfall (start)": "start_game",
+        "^!spyfall (end)": "end_game",
+    }
 
     usage = [
         "!spyfall join: Join a new game.",
@@ -32,27 +32,11 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                     'role': 'none',
                   }
 
-    def run(self, msg, matches):
-
-        if matches.group(0) == "!spyfall":
-            return self.list_games(msg)
-
-        command = matches.group(1)
-
-        if command == "join":
-            return self.join_game(msg)
-
-        if command == "start":
-            return self.start_game(msg)
-
-        if command == "end":
-            return self.end_game(msg)
-
-    def join_game(self, msg):
+    def join_game(self, msg, matches):
         chat_id = msg.dest.id
         user_id = msg.src.username
         peer_id = msg.src
-        joined_game = u"%s has joined the game " % user_id
+        joined_game = "%s has joined the game " % user_id
 
         print(peer_id)
 
@@ -86,15 +70,16 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
        return "created game" 
 
-    def start_game(self, msg):
+    def start_game(self, msg, matches):
         chat_id = msg.dest.id
         
         # get our role
-        role = self.get_role(msg)['role']
-        category = self.get_role(msg)['category']
+
+        category = self.get_category(msg)
 
         for k in self.games[chat_id]['players']:
-                self.games[chat_id]['players'][k]['role'] = role
+            role = self.get_role(msg, category)
+            self.games[chat_id]['players'][k]['role'] = role
 
         get_spy = random.sample(self.games[chat_id]['players'].keys(),1)
 
@@ -103,10 +88,9 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                 self.games[chat_id]['players'][k.id]['isSpy'] = True
                 k.send_msg("You're a spy!")
             else:
-                user_role = u"You're a %s" % role
-                user_category = u"Location: %s" % category
-                k.send_msg(user_role)
-                k.send_msg(user_category)
+                role = self.games[chat_id]['players'][k]['role']
+                user_data = ("You're a {} \nLocation: {}".format(role, category))
+                k.send_msg(user_data)
 
         return "game started"
 
@@ -114,7 +98,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         self.games.pop(chat_id, None)
         return "game stopped"
 
-    def get_role(self, msg):
+    def get_role(self, msg, category):
 
         cwd = os.path.dirname(__file__)
         json_data = os.path.join(cwd, 'spyfall_data.json')
@@ -122,12 +106,21 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         with open(json_data) as data_file:    
                 data = json.load(data_file)
 
-        category = random.choice(list(data.keys()))
         role = random.choice(list(data[category]))
 
-        return {'role': role, 'category': category}
+        return role
 
-    def list_games(self, msg):
+    def get_category(self, msg):
+        cwd = os.path.dirname(__file__)
+        json_data = os.path.join(cwd, 'spyfall_data.json')
+        # load our json
+        with open(json_data) as data_file:
+                data = json.load(data_file)
+
+        category = random.choice(list(data.keys()))
+        return category
+
+    def list_games(self, msg, matches):
         game_list = [] 
 
         for k in self.games.keys():
