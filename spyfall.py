@@ -23,12 +23,12 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
     games = {}
     game_data = {
-                    'isStarted': 'false',
+                    'isStarted': False,
                     'players': {}
                 }
 
     player_data = {
-                    'isSpy': 'false',
+                    'isSpy': False,
                     'role': 'none',
                   }
 
@@ -51,14 +51,17 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
     def join_game(self, msg):
         chat_id = msg.dest.id
         user_id = msg.src.username
+        peer_id = msg.src
         joined_game = u"%s has joined the game " % user_id
 
+        print(peer_id)
+
         def join_game():
-            self.games[chat_id]['players'][user_id] = self.player_data
+            self.games[chat_id]['players'][peer_id] = self.player_data
 
         if chat_id in self.games:
             # go herea
-            if user_id in self.games[chat_id]:
+            if peer_id in self.games[chat_id]:
                 return "You've already joined the game!"
             else:
                 join_game()
@@ -80,7 +83,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
            print("We got here!")
        else:
            self.games[chat_id] = self.game_data
-           print("We created a game?")
 
        return "created game" 
 
@@ -88,14 +90,23 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         chat_id = msg.dest.id
         
         # get our role
-        role = self.get_role(msg)
+        role = self.get_role(msg)['role']
+        category = self.get_role(msg)['category']
 
-        print(role)
-        
         for k in self.games[chat_id]['players']:
-            print(k)
-            # append the role of the user
-            # create a spy
+                self.games[chat_id]['players'][k]['role'] = role
+
+        get_spy = random.sample(self.games[chat_id]['players'].keys(),1)
+
+        for k in self.games[chat_id]['players']:
+            if k.id == get_spy:
+                self.games[chat_id]['players'][k.id]['isSpy'] = True
+                k.send_msg("You're a spy!")
+            else:
+                user_role = u"You're a %s" % role
+                user_category = u"Location: %s" % category
+                k.send_msg(user_role)
+                k.send_msg(user_category)
 
         return "game started"
 
@@ -114,7 +125,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         category = random.choice(list(data.keys()))
         role = random.choice(list(data[category]))
 
-        return role 
+        return {'role': role, 'category': category}
 
     def list_games(self, msg):
         game_list = [] 
