@@ -76,12 +76,13 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
             return "Game already started"
         else:
             # get our role
-            category = self.get_category(msg)
+            category = self.get_category(msg, random)
             get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
             get_first = random.choice(list(self.games[chat_id]['players'].keys()))
             
             if len(self.games[chat_id]['players'].keys()) >= 3:
                 for k in self.games[chat_id]['players']:
+                    k.send_msg("Locations:\n{}".format("\n".join(self.get_category(msg, "all"))))
                     if k.id == get_spy.id:
                         self.games[chat_id]['players'][k]['role'] = "spy"
                         k.send_msg("You're a spy!")
@@ -91,9 +92,11 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                         user_data = ("You're a {} \nLocation: {}".format(role, category))
                         k.send_msg(user_data)
 
+                    
+
                 # set game to started
                 self.games[chat_id]['isStarted'] = True
-                game_started = ("Game started: Frist up: {}".format(get_first.username))
+                game_started = ("Game started: First up: {}".format(get_first.username))
 
                 return game_started 
             else:
@@ -119,7 +122,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         try:
             if chat_id in self.games:
                 if self.games[chat_id]['isStarted'] == True:
-                    return "Game is active."
+                    return "Game is active current players {}.".format(len(self.game[chat_id]['players'].keys()))
 
             else:
                 return "There is no game currently."
@@ -138,14 +141,20 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
         return role
 
-    def get_category(self, msg):
+    def get_category(self, msg, type):
         cwd = os.path.dirname(__file__)
         json_data = os.path.join(cwd, 'spyfall_data.json')
+        category = None
+
         # load our json
         with open(json_data) as data_file:
                 data = json.load(data_file)
 
-        category = random.choice(list(data.keys()))
+        if category == "random":
+            category = random.choice(list(data.keys()))
+        else:
+            category = data.keys()
+
         return category
 
     def list_games(self, msg, matches):
