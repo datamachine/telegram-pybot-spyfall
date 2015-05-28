@@ -13,6 +13,8 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         "^!spyfall (start)": "start_game",
         "^!spyfall (status)": "game_status",
         "^!spyfall (end)": "end_game",
+        "^!spyfall (locations)": "game_locations",
+
     }
 
     usage = [
@@ -21,6 +23,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         "!spyfall start: Start game a game with 3+ people.",
         "!spyfall status: Check on the status of a game in the chat room",
         "!spyfall end: End current game.",
+        "!spyfall locations: Send a list of locations."
     ]
 
     games = {}
@@ -76,13 +79,13 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
             return "Game already started"
         else:
             # get our role
-            category = self.get_category(msg, random)
+            category = self.get_category(msg, "random")
             get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
             get_first = random.choice(list(self.games[chat_id]['players'].keys()))
             
             if len(self.games[chat_id]['players'].keys()) >= 3:
                 for k in self.games[chat_id]['players']:
-                    k.send_msg("Locations:\n{}".format("\n".join(self.get_category(msg, "all"))))
+
                     if k.id == get_spy.id:
                         self.games[chat_id]['players'][k]['role'] = "spy"
                         k.send_msg("You're a spy!")
@@ -119,15 +122,17 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
     def game_status(self, msg, matches):
         chat_id = msg.dest.id
 
-        try:
-            if chat_id in self.games:
-                if self.games[chat_id]['isStarted'] == True:
-                    return "Game is active current players {}.".format(len(self.game[chat_id]['players'].keys()))
+        #try:
+        if chat_id in self.games:
+            if self.games[chat_id]['isStarted'] == True:
+                return "Game is active current players {}.".format(len(self.games[chat_id]['players'].keys()))
+            elif self.games[chat_id]['isStarted'] == False:
+                return "Game is not active current players {}.".format(len(self.games[chat_id]['players'].keys()))
 
-            else:
-                return "There is no game currently."
-        except:
-            return "There is no game currently."
+        else:
+            return "There is no game currently"
+        #except:
+        #    return "There is no game currently."
 
     def get_role(self, msg, category):
 
@@ -150,12 +155,15 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         with open(json_data) as data_file:
                 data = json.load(data_file)
 
-        if category == "random":
+        if type == "random":
             category = random.choice(list(data.keys()))
         else:
             category = data.keys()
 
         return category
+
+    def game_locations(self, msg, matches):
+        msg.src.send_msg("Locations:\n{}".format("\n".join(self.get_category(msg, "all"))))
 
     def list_games(self, msg, matches):
         game_list = [] 
