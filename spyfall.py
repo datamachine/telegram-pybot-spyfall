@@ -4,8 +4,6 @@ import os
 import random
 import json
 import sys
-import pprint
-
 
 
 class SpyfallPlugin(plugintypes.TelegramPlugin):
@@ -44,7 +42,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                     return "Cannot join game, game already started"
                 else:
                    # go herea
-                   print("We made it to the else")
                    if peer_id in self.games[chat_id]:
                        return "You've already joined the game!"
                    else:
@@ -57,7 +54,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                 return joined_game
 
         except KeyError:
-            print("We made it here")
             self.create_game(msg)
             self.games[chat_id]['players'][peer_id] = {}
             return joined_game
@@ -68,7 +64,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
        if chat_id in self.games:
            # add user to the chat_id
            # games[chat_id][user] = role
-           print("We got here!")
        else:
            self.games[chat_id] = self.game_data
 
@@ -76,7 +71,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
     def start_game(self, msg, matches):
         chat_id = msg.dest.id
-        pprint.pprint(self.games[chat_id])
 
         if self.games[chat_id]['isStarted'] == True:
             return "Game already started"
@@ -84,7 +78,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
             # get our role
             category = self.get_category(msg)
             get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
-            print("You'e a spy! {}".format(get_spy.username))  
 
             for k in self.games[chat_id]['players']:
                 if k.id == get_spy.id:
