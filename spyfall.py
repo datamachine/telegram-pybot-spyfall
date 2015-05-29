@@ -1,4 +1,5 @@
 import plugintypes
+from telegrambot.utils.decorators import group_only, pm_only
 import sys
 import os
 import random
@@ -8,7 +9,6 @@ import sys
 
 class SpyfallPlugin(plugintypes.TelegramPlugin):
     patterns = {
-        "^!spyfall (games)": "list_games",
         "^!spyfall (join)": "join_game",
         "^!spyfall (start)": "start_game",
         "^!spyfall (status)": "game_status",
@@ -18,7 +18,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
     }
 
     usage = [
-        "!spyfall games: List all the games!",
         "!spyfall join: Join a new game.",
         "!spyfall start: Start game a game with 3+ people.",
         "!spyfall status: Check on the status of a game in the chat room",
@@ -28,6 +27,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
     games = {}
 
+    @group_only
     def join_game(self, msg, matches):
         chat_id = msg.dest.id
         user_id = msg.src.username
@@ -67,6 +67,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                 }
            return "Created Game"
 
+    @group_only
     def start_game(self, msg, matches):
         chat_id = msg.dest.id
 
@@ -101,6 +102,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                 players_needed = ("Not enough to start, need {}".format(3 - len(self.games[chat_id]['players'].keys())))
                 return players_needed
 
+    @group_only
     def end_game(self, msg, matches):
         chat_id = msg.dest.id
 
@@ -114,6 +116,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         except KeyError:
             return "Game has not started"
 
+    @group_only
     def game_status(self, msg, matches):
         chat_id = msg.dest.id
 
@@ -159,17 +162,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
         return category
 
+    @pm_only
     def game_locations(self, msg, matches):
         msg.src.send_msg("Locations:\n{}".format("\n".join(self.get_category(msg, "all"))))
-
-    def list_games(self, msg, matches):
-        game_list = [] 
-
-        for k in self.games.keys():
-            game_list.append(str(k))
-
-        if any(self.games):
-            #returns the game list
-            return "Game: \n".join(game_list)
-        else: 
-            return "No games"
