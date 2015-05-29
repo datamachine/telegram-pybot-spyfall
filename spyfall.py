@@ -27,10 +27,6 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
     ]
 
     games = {}
-    game_data = {
-                    'isStarted': False,
-                    'players': {}
-                }
 
     def join_game(self, msg, matches):
         chat_id = msg.dest.id
@@ -39,16 +35,14 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
         joined_game = "%s has joined the game " % user_id
 
         try:
-
             if chat_id in self.games:
                 if self.games[chat_id]['isStarted'] == True:
-                    return "Cannot join game, game already started"
+                    return "Cannot join game, game already started."
                 else:
                    # go herea
                    if peer_id in self.games[chat_id]:
                        return "You've already joined the game!"
                    else:
-
                        self.games[chat_id]['players'][peer_id] = {}
                        return joined_game
             else:
@@ -65,24 +59,25 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
        chat_id = msg.dest.id
 
        if chat_id in self.games:
-           # add user to the chat_id
-           # games[chat_id][user] = role
            return "Game already created"
        else:
-           self.games[chat_id] = self.game_data
-           return "created game" 
+           self.games[chat_id] = {
+                   'isStarted': False,
+                   'players': {}
+                }
+           return "Created Game"
 
     def start_game(self, msg, matches):
         chat_id = msg.dest.id
 
-        if self.games[chat_id]['isStarted'] == True:
-            return "Game already started"
+        if self.games[chat_id]['isStarted']:
+            return "Game already started."
         else:
             # get our role
             category = self.get_category(msg, "random")
             get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
             get_first = random.choice(list(self.games[chat_id]['players'].keys()))
-            
+
             if len(self.games[chat_id]['players'].keys()) >= 3:
                 for k in self.games[chat_id]['players']:
 
@@ -95,23 +90,23 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                         user_data = ("You're a {} \nLocation: {}".format(role, category))
                         k.send_msg(user_data)
 
-                    
 
                 # set game to started
                 self.games[chat_id]['isStarted'] = True
-                game_started = ("Game started: First up: {}".format(get_first.username))
+                game_started = ("Game started: First up: {}\nAttention: {}".format(get_first.username,
+                    " , ".join(["@{}".format(player.username) for player in self.games[chat_id]['players'].keys()])))
 
-                return game_started 
+                return game_started
             else:
                 players_needed = ("Not enough to start, need {}".format(3 - len(self.games[chat_id]['players'].keys())))
-                return players_needed 
+                return players_needed
 
     def end_game(self, msg, matches):
         chat_id = msg.dest.id
 
-        try: 
+        try:
             if any(self.games[chat_id]):
-                if self.games[chat_id]['isStarted'] == True:
+                if self.games[chat_id]['isStarted']:
                    self.games.pop(chat_id, None)
                    return "Game stopped"
                 else:
@@ -124,10 +119,12 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
 
         #try:
         if chat_id in self.games:
-            if self.games[chat_id]['isStarted'] == True:
-                return "Game is active current players {}.".format(len(self.games[chat_id]['players'].keys()))
+            current_players = "Current Players {}.\n{}".format(len(self.games[chat_id]['players'].keys()),
+                               ", ".join([player.username for player in self.games[chat_id]['players'].keys()]))
+            if self.games[chat_id]['isStarted']:
+                return "Game is active. {}".format(current_players)
             elif self.games[chat_id]['isStarted'] == False:
-                return "Game is not active current players {}.".format(len(self.games[chat_id]['players'].keys()))
+                return "Game is not active. {}.".format(current_players)
 
         else:
             return "There is no game currently"
