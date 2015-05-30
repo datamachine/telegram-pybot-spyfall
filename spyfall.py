@@ -40,7 +40,7 @@ class SpyfallPlugin(plugintypes.TelegramPlugin):
                     return "Cannot join game, game already started."
                 else:
                    # go herea
-                   if peer_id in self.games[chat_id]:
+                   if peer_id in self.games[chat_id]['players']:
                        return "You've already joined the game!"
                    else:
                        self.games[chat_id]['players'][peer_id] = {}
