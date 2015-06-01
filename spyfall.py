@@ -1,4 +1,4 @@
-import plugintypes
+from telegrambot.plugin import TelegramPlugin
 from telegrambot.utils.decorators import group_only, pm_only
 import sys
 import os
@@ -7,7 +7,7 @@ import json
 import sys
 
 
-class SpyfallPlugin(plugintypes.TelegramPlugin):
+class SpyfallPlugin(TelegramPlugin):
     patterns = {
         "^!spyfall (join)": "join_game",
         "^!spyfall (start)": "start_game",
