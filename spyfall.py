@@ -1,17 +1,128 @@
 from telex.plugin import TelexPlugin
 from telex.utils.decorators import group_only, pm_only
-import sys
-import os
+import sys, os
 import random
 import json
-import sys
+from datetime import datetime
+import math
+
+
+class SpyfallGame:
+    game_data = {}
+
+    def __init__(self, chat):
+        self.chat = chat
+        self.players = {}
+        self.votes = {}
+        self.start_time = None
+        self.started = False
+        self.spy = None
+        self.location = None
+
+    def start_game(self):
+        if len(self.players) < 3:
+            return "Cannot start with less than 3 players!"
+
+        self.start_time = datetime.now()
+        self.chat.send_msg("Attention {} !".format(" @".join([player.username for player in self.players.keys()]))
+        self.chat.send_msg("Starting game with {} players! Majority is {} votes.".format(
+                           len(self.players), self.majority)
+
+        self._assign_roles()
+        self.started = True
+
+    def add_player(self, player):
+        if self.started:
+            return "Cannot join game, game already started."
+
+        if player self.players:
+            return "{} is already in the game".format(player.username)
+
+        if not player.username:
+            return "Username required to play, check your telegram settings!"
+
+        self.players[player] = {}
+        return "{} has joined the game!".format(player.username)
+
+    def del_player(self, player, username=None):
+        if self.started:
+            return "Cannot remove players from an active game"
+        if username != None:
+            kicked_player = next(p for p in self.players if p.username.lower() == username.lower())
+            if kicked_player:
+                self.players.pop(kicked_player, None)
+                return "@{} has kicked @{} from the current game.".format(player.username, username)
+            else:
+                return "No player in game found with the username {}.".format(username)
+        else:
+            if player not in self.players:
+                return "You're not in the game!"
+            self.players.pop(player, None)
+            return "Removed @{} from the game!".format(player.username)
+
+    def vote_player(self, player, username):
+        if not self.started:
+            return "Cannot vote when no game is active!"
+
+        voted = next(p for p in self.players if p.username.lower() == username.lower())
+        if voted:
+            try:
+                self.votes[voted].append(votes)
+            except KeyError:
+                self.votes[voted] = []
+                self.votes[voted].append(votes)
+            voted_msg = "@{} has voted for @{} ".format(player.username, voted.username)
+            if len(self.votes[voted]) >= majority:
+                if voted is self.spy:
+                    return "{}\nThey were the spy! Quick @{}, where are we!?".format(voted_msg, voted.username)
+                else:
+                    return "{}\nBah! They were not the spy! Everyone but @{} loses!".format(voted_msg, voted.username)
+            return "@{} has voted for @{} (That makes {} votes! {} more until majority)".format(player.username, voted.username,
+                len(self.votes[voted]), (self.majority - len(self.votes[voted])))
+
+    def status(self):
+        current_players = "Current Players {}.\n{}".format(len(self.players),
+                          ", ".join([player.username for player in selfplayers.keys()]))
+        if self.started:
+            return "Game is active. {}".format(current_players)
+        else:
+            return "Game is not active. {}".format(current_players)
+
+    def _assign_roles(self):
+        gamedata= SpyfallGame.game_data
+        self.location = random.choice(gamedata.keys())
+        self.spy = random.choice(self.players.keys())
+        for player in self.players.keys():
+            if player is not self.spy:
+                role = random.choice(gamedata[self.location])
+                self.players[player]["role"] = role
+                player.send_msg("Location: {}\nRole: {}\nTo get the full list of locations send me: !spyfall locations".format(
+                                self.location, role))
+            else:
+                self.players[player]["role"] = "spy"
+                player.send_msg("You are the spy!\nTo get the full list of locations send me: !spyfall locations")
+
+    @property
+    def majority(self):
+        return math.floor(len(self.players)/2)+1)
+
+    @staticmethod
+    def load_game_data(data):
+        SpyfallGame.game_data = data
+
+    @staticmethod
+    def get_locations():
+        return "Locations:\n{}".format("\n".join(SpyfallGame.game_data.keys()))
 
 
 class SpyfallPlugin(TelexPlugin):
     patterns = {
         "^!spyfall (join)": "join_game",
+        "^!spyfall (leave)": "leave_game",
         "^!spyfall (start)": "start_game",
         "^!spyfall (status)": "game_status",
+        "^!spyfall (vote) @?(.+)": "vote_player",
+        "^!spyfall (kick) @?(.+)": "kick_player",
         "^!spyfall (end)": "end_game",
         "^!spyfall (locations)": "game_locations",
 
@@ -19,7 +130,10 @@ class SpyfallPlugin(TelexPlugin):
 
     usage = [
         "!spyfall join: Join a new game.",
+        "!spyfall leave: Leave current game.",
         "!spyfall start: Start game a game with 3+ people.",
+        "!spyfall kick @username: Kick player from forming game, useful if they are AFK for a long time.",
+        "!spyfall vote @username: Vote for player as spy! Careful, at majority the round ends immediately",
         "!spyfall status: Check on the status of a game in the chat room",
         "!spyfall end: End current game.",
         "!spyfall locations: Send a list of locations."
@@ -27,141 +141,79 @@ class SpyfallPlugin(TelexPlugin):
 
     games = {}
 
+    def __init__(self):
+        self.games = {}
+
+        cwd = os.path.dirname(__file__)
+        json_data = os.path.join(cwd, 'spyfall_data.json')
+        SpyfallGame.load_game_data(json_data)
+
     @group_only
     def join_game(self, msg, matches):
-        chat_id = msg.dest.id
-        user_id = msg.src.username
-        peer_id = msg.src
-        joined_game = "%s has joined the game " % user_id
+        chat = msg.dest
+        user = msg.src
 
         try:
-            if chat_id in self.games:
-                if self.games[chat_id]['isStarted'] == True:
-                    return "Cannot join game, game already started."
-                else:
-                   # go herea
-                   if peer_id in self.games[chat_id]['players']:
-                       return "You've already joined the game!"
-                   else:
-                       self.games[chat_id]['players'][peer_id] = {}
-                       return joined_game
-            else:
-                self.create_game(msg)
-                self.games[chat_id]['players'][peer_id] = {}
-                return joined_game
-
+            return self.games[chat].add_player(user)
         except KeyError:
-            self.create_game(msg)
-            self.games[chat_id]['players'][peer_id] = {}
-            return joined_game
 
-    def create_game(self, msg):
-       chat_id = msg.dest.id
+            self.games[chat] = SpyfallGame(chat, json_data)
+            return self.games[chat].add_player(user)
 
-       if chat_id in self.games:
-           return "Game already created"
-       else:
-           self.games[chat_id] = {
-                   'isStarted': False,
-                   'players': {}
-                }
-           return "Created Game"
+    @group_only
+    def leave_game(self, msg, matches):
+        chat = msg.dest
+        user = msg.src
+
+        if chat not in self.games:
+            return "There is no game currently starting!"
+        else:
+            return self.games[chat].del_player(user)
+
+    @group_only
+    def leave_game(self, msg, matches):
+        chat = msg.dest
+        user = msg.src
+
+        if chat not in self.games:
+            return "There is no game currently starting!"
+        else:
+            return self.games[chat].del_player(user, username=matches.group(2))
+
+    @group_only
+    def leave_game(self, msg, matches):
+        chat = msg.dest
+        user = msg.src
+
+        if chat not in self.games:
+            return "There is no game currently starting!"
+        else:
+            return self.games[chat].vote_player(player, username=matches.group(2))
 
     @group_only
     def start_game(self, msg, matches):
-        chat_id = msg.dest.id
-
-        if self.games[chat_id]['isStarted']:
-            return "Game already started."
-        else:
-            # get our role
-            category = self.get_category(msg, "random")
-            get_spy = random.choice(list(self.games[chat_id]['players'].keys()))
-            get_first = random.choice(list(self.games[chat_id]['players'].keys()))
-
-            if len(self.games[chat_id]['players'].keys()) >= 3:
-                for k in self.games[chat_id]['players']:
-
-                    if k.id == get_spy.id:
-                        self.games[chat_id]['players'][k]['role'] = "spy"
-                        k.send_msg("You're a spy!")
-                    else:
-                        role = self.get_role(msg, category)
-                        self.games[chat_id]['players'][k]['role'] = role
-                        user_data = ("You're a {} \nLocation: {}".format(role, category))
-                        k.send_msg(user_data)
-
-
-                # set game to started
-                self.games[chat_id]['isStarted'] = True
-                game_started = ("Game started: First up: {}\nAttention: {}".format(get_first.username,
-                    " , ".join(["@{}".format(player.username) for player in self.games[chat_id]['players'].keys()])))
-
-                return game_started
-            else:
-                players_needed = ("Not enough to start, need {}".format(3 - len(self.games[chat_id]['players'].keys())))
-                return players_needed
+        chat = msg.dest
+        return self.games[chat].start_game()
 
     @group_only
     def end_game(self, msg, matches):
-        chat_id = msg.dest.id
+        chat = msg.dest
 
-        try:
-            if any(self.games[chat_id]):
-                if self.games[chat_id]['isStarted']:
-                   self.games.pop(chat_id, None)
-                   return "Game stopped"
-                else:
-                    return "Game has not started"
-        except KeyError:
-            return "Game has not started"
+        if chat in self.games:
+            self.games.pop(chat, None)
+            return "Game ended!"
+        else:
+            return "Game has not started!"
 
     @group_only
     def game_status(self, msg, matches):
-        chat_id = msg.dest.id
+        chat = msg.dest
 
-        #try:
-        if chat_id in self.games:
-            current_players = "Current Players {}.\n{}".format(len(self.games[chat_id]['players'].keys()),
-                               ", ".join([player.username for player in self.games[chat_id]['players'].keys()]))
-            if self.games[chat_id]['isStarted']:
-                return "Game is active. {}".format(current_players)
-            elif self.games[chat_id]['isStarted'] == False:
-                return "Game is not active. {}.".format(current_players)
-
+        if chat in self.games:
+            return chat.status()
         else:
             return "There is no game currently"
-        #except:
-        #    return "There is no game currently."
-
-    def get_role(self, msg, category):
-
-        cwd = os.path.dirname(__file__)
-        json_data = os.path.join(cwd, 'spyfall_data.json')
-        # load our json
-        with open(json_data) as data_file:    
-                data = json.load(data_file)
-
-        role = random.choice(list(data[category]))
-
-        return role
-
-    def get_category(self, msg, type):
-        cwd = os.path.dirname(__file__)
-        json_data = os.path.join(cwd, 'spyfall_data.json')
-        category = None
-
-        # load our json
-        with open(json_data) as data_file:
-                data = json.load(data_file)
-
-        if type == "random":
-            category = random.choice(list(data.keys()))
-        else:
-            category = data.keys()
-
-        return category
 
     @pm_only
     def game_locations(self, msg, matches):
-        msg.src.send_msg("Locations:\n{}".format("\n".join(self.get_category(msg, "all"))))
+        return self.game[chat].get_locations()
