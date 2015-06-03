@@ -1,5 +1,5 @@
-from telegrambot.plugin import TelegramPlugin
-from telegrambot.utils.decorators import group_only, pm_only
+from telex.plugin import TelexPlugin
+from telex.utils.decorators import group_only, pm_only
 import sys
 import os
 import random
@@ -7,7 +7,7 @@ import json
 import sys
 
 
-class SpyfallPlugin(TelegramPlugin):
+class SpyfallPlugin(TelexPlugin):
     patterns = {
         "^!spyfall (join)": "join_game",
         "^!spyfall (start)": "start_game",
