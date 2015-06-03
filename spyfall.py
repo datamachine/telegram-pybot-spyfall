@@ -24,9 +24,9 @@ class SpyfallGame:
             return "Cannot start with less than 3 players!"
 
         self.start_time = datetime.now()
-        self.chat.send_msg("Attention {} !".format(" @".join([player.username for player in self.players.keys()]))
+        self.chat.send_msg("Attention {} !".format(" @".join([player.username for player in self.players.keys()])))
         self.chat.send_msg("Starting game with {} players! Majority is {} votes.".format(
-                           len(self.players), self.majority)
+                           len(self.players), self.majority))
 
         self._assign_roles()
         self.started = True
@@ -35,7 +35,7 @@ class SpyfallGame:
         if self.started:
             return "Cannot join game, game already started."
 
-        if player self.players:
+        if player in self.players:
             return "{} is already in the game".format(player.username)
 
         if not player.username:
@@ -104,7 +104,7 @@ class SpyfallGame:
 
     @property
     def majority(self):
-        return math.floor(len(self.players)/2)+1)
+        return math.floor(len(self.players)/2)+1
 
     @staticmethod
     def load_game_data(data):
