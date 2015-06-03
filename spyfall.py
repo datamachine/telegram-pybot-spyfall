@@ -3,7 +3,7 @@ from telex.utils.decorators import group_only, pm_only
 import sys, os
 import random
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import math
 
 
@@ -258,8 +258,10 @@ class SpyfallPlugin(TelexPlugin):
         chat = msg.dest
 
         if chat in self.games:
-            self.games.pop(chat, None)
-            return "Game ended!"
+            game = self.games.pop(chat, None)
+            end_time = datetime.now()
+
+            return "Game ended! Game lasted {} minutes.".format(math.floor((end_time-game.start_time).seconds/60))
         else:
             return "Game has not started!"
 
