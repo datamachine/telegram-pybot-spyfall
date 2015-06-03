@@ -82,7 +82,7 @@ class SpyfallGame:
 
     def status(self):
         current_players = "Current Players {}.\n{}".format(len(self.players),
-                          ", ".join([player.username for player in selfplayers.keys()]))
+                          ", ".join([player.username for player in self.players.keys()]))
         if self.started:
             return "Game is active. {}".format(current_players)
         else:
@@ -108,7 +108,8 @@ class SpyfallGame:
 
     @staticmethod
     def load_game_data(data):
-        SpyfallGame.game_data = data
+        with open(data) as data_file:
+            SpyfallGame.game_data = json.load(data_file)
 
     @staticmethod
     def get_locations():
@@ -171,7 +172,7 @@ class SpyfallPlugin(TelexPlugin):
             return self.games[chat].del_player(user)
 
     @group_only
-    def leave_game(self, msg, matches):
+    def kick_player(self, msg, matches):
         chat = msg.dest
         user = msg.src
 
@@ -181,14 +182,14 @@ class SpyfallPlugin(TelexPlugin):
             return self.games[chat].del_player(user, username=matches.group(2))
 
     @group_only
-    def leave_game(self, msg, matches):
+    def vote_player(self, msg, matches):
         chat = msg.dest
         user = msg.src
 
         if chat not in self.games:
             return "There is no game currently starting!"
         else:
-            return self.games[chat].vote_player(player, username=matches.group(2))
+            return self.games[chat].vote_player(user, username=matches.group(2))
 
     @group_only
     def start_game(self, msg, matches):
@@ -210,7 +211,7 @@ class SpyfallPlugin(TelexPlugin):
         chat = msg.dest
 
         if chat in self.games:
-            return chat.status()
+            return self.games[chat].status()
         else:
             return "There is no game currently"
 
