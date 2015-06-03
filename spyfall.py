@@ -216,4 +216,4 @@ class SpyfallPlugin(TelexPlugin):
 
     @pm_only
     def game_locations(self, msg, matches):
-        return self.game[chat].get_locations()
+        return SpyfallGame.get_locations()
