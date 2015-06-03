@@ -64,6 +64,8 @@ class SpyfallGame:
         if not self.started:
             return "Cannot vote when no game is active!"
 
+        self.unvote(player) # Unvote if necessary.
+
         voted = next(p for p in self.players if p.username.lower() == username.lower())
         if voted:
             try:
@@ -79,6 +81,36 @@ class SpyfallGame:
                     return "{}\nBah! They were not the spy! Everyone but @{} loses!".format(voted_msg, voted.username)
             return "@{} has voted for @{} (That makes {} votes! {} more until majority)".format(player.username, voted.username,
                 len(self.votes[voted]), (self.majority - len(self.votes[voted])))
+
+    def get_votes(self):
+        if not self.started:
+            return "Game not started, cannot get votes"
+
+        text = "Current Votes (Majority is {}):\n".format(self.majority)
+        for player in sorted(self.votes.keys(), key=lambda x:len(self.votes[x]), reversed=True):
+            if len(self.votes[player]) > 0:
+                text += "{} ({}): {}\n".format(player.username, len(self.votes[player]),
+                                               ",".join([p.username for p in self.votes[player]]))
+        return text
+
+    def unvote(self, player):
+        if not self.started:
+            return "Cannot unvote when no game is active!"
+
+        current_vote = None
+        for voted in self.votes.keys():
+            try:
+                idx = self.votes[voted].index(player)
+                self.votes[voted].pop(idx)
+                current_vote = voted
+                break
+            except ValueError:
+                pass
+
+        if current_vote:
+            return "@{} is no longer voting for @{}".format(player.username, current_vote.username)
+        else:
+            return "Cannot unvote, @{} are not voting for anyone".format(player.username)
 
     def status(self):
         current_players = "Current Players {}.\n{}".format(len(self.players),
@@ -123,6 +155,8 @@ class SpyfallPlugin(TelexPlugin):
         "^!spyfall (start)": "start_game",
         "^!spyfall (status)": "game_status",
         "^!spyfall (vote) @?(.+)": "vote_player",
+        "^!spyfall (unvote)": "unvote",
+        "^!spyfall (votes)": "get_votes",
         "^!spyfall (kick) @?(.+)": "kick_player",
         "^!spyfall (end)": "end_game",
         "^!spyfall (locations)": "game_locations",
@@ -135,6 +169,8 @@ class SpyfallPlugin(TelexPlugin):
         "!spyfall start: Start game a game with 3+ people.",
         "!spyfall kick @username: Kick player from forming game, useful if they are AFK for a long time.",
         "!spyfall vote @username: Vote for player as spy! Careful, at majority the round ends immediately",
+        "!spyfall unvote: Remove your current vote",
+        "!spyfall votes: List vote count on players with votes",
         "!spyfall status: Check on the status of a game in the chat room",
         "!spyfall end: End current game.",
         "!spyfall locations: Send a list of locations."
@@ -170,6 +206,27 @@ class SpyfallPlugin(TelexPlugin):
             return "There is no game currently starting!"
         else:
             return self.games[chat].del_player(user)
+
+    @group_only
+    def unvote(self, msg, matches):
+        chat = msg.dest
+        user = msg.src
+
+        if chat not in self.games:
+            return "There is no game currently running!"
+        else:
+            return self.games[chat].unvote(player)
+
+
+    @group_only
+    def get_votes(self, msg, matches):
+        chat = msg.dest
+        user = msg.src
+
+        if chat not in self.games:
+            return "There is no game currently running!"
+        else:
+            return self.games[chat].get_votes()
 
     @group_only
     def kick_player(self, msg, matches):
