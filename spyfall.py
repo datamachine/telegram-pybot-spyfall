@@ -157,7 +157,7 @@ class SpyfallPlugin(TelexPlugin):
             return self.games[chat].add_player(user)
         except KeyError:
 
-            self.games[chat] = SpyfallGame(chat, json_data)
+            self.games[chat] = SpyfallGame(chat)
             return self.games[chat].add_player(user)
 
     @group_only
