@@ -24,7 +24,7 @@ class SpyfallGame:
             return "Cannot start with less than 3 players!"
 
         self.start_time = datetime.now()
-        self.chat.send_msg("Attention {} !".format(" @".join([player.username for player in self.players.keys()])))
+        self.chat.send_msg("Attention @{} !".format(" @".join([player.username for player in self.players.keys()])))
         self.chat.send_msg("Starting game with {} players! Majority is {} votes.".format(
                            len(self.players), self.majority))
 
@@ -63,22 +63,25 @@ class SpyfallGame:
     def vote_player(self, player, username):
         if not self.started:
             return "Cannot vote when no game is active!"
+        if player not in self.players.keys():
+            return "@{}, you're not even playing!".format(player.username)
+
 
         self.unvote(player) # Unvote if necessary.
 
         voted = next(p for p in self.players if p.username.lower() == username.lower())
         if voted:
             try:
-                self.votes[voted].append(votes)
+                self.votes[voted].append(player)
             except KeyError:
                 self.votes[voted] = []
-                self.votes[voted].append(votes)
+                self.votes[voted].append(player)
             voted_msg = "@{} has voted for @{} ".format(player.username, voted.username)
-            if len(self.votes[voted]) >= majority:
+            if len(self.votes[voted]) >= self.majority:
                 if voted is self.spy:
                     return "{}\nThey were the spy! Quick @{}, where are we!?".format(voted_msg, voted.username)
                 else:
-                    return "{}\nBah! They were not the spy! Everyone but @{} loses!".format(voted_msg, voted.username)
+                    return "{}\nBah! They were not the spy! Everyone but @{} loses!".format(voted_msg, self.spy.username)
             return "@{} has voted for @{} (That makes {} votes! {} more until majority)".format(player.username, voted.username,
                 len(self.votes[voted]), (self.majority - len(self.votes[voted])))
 
@@ -87,7 +90,7 @@ class SpyfallGame:
             return "Game not started, cannot get votes"
 
         text = "Current Votes (Majority is {}):\n".format(self.majority)
-        for player in sorted(self.votes.keys(), key=lambda x: len(self.votes[x]), reversed=True):
+        for player in sorted(self.votes.keys(), key=lambda x: len(self.votes[x]), reverse=True):
             if len(self.votes[player]) > 0:
                 text += "{} ({}): {}\n".format(player.username, len(self.votes[player]),
                                                ",".join([p.username for p in self.votes[player]]))
@@ -96,6 +99,8 @@ class SpyfallGame:
     def unvote(self, player):
         if not self.started:
             return "Cannot unvote when no game is active!"
+        if player not in self.players.keys():
+            return "@{}, you're not even playing!".format(player.username)
 
         current_vote = None
         for voted in self.votes.keys():
@@ -122,11 +127,11 @@ class SpyfallGame:
 
     def _assign_roles(self):
         gamedata= SpyfallGame.game_data
-        self.location = random.choice(gamedata.keys())
-        self.spy = random.choice(self.players.keys())
+        self.location = random.choice(list(gamedata.keys()))
+        self.spy = random.choice(list(self.players.keys()))
         for player in self.players.keys():
             if player is not self.spy:
-                role = random.choice(gamedata[self.location])
+                role = random.choice(list(gamedata[self.location]))
                 self.players[player]["role"] = role
                 player.send_msg("Location: {}\nRole: {}\nTo get the full list of locations send me: !spyfall locations".format(
                                 self.location, role))
@@ -215,7 +220,7 @@ class SpyfallPlugin(TelexPlugin):
         if chat not in self.games:
             return "There is no game currently running!"
         else:
-            return self.games[chat].unvote(player)
+            return self.games[chat].unvote(user)
 
 
     @group_only
