@@ -47,7 +47,7 @@ class SpyfallGame:
     def del_player(self, player, username=None):
         if self.started:
             return "Cannot remove players from an active game"
-        if username != None:
+        if username is not None:
             kicked_player = next(p for p in self.players if p.username.lower() == username.lower())
             if kicked_player:
                 self.players.pop(kicked_player, None)
@@ -87,7 +87,7 @@ class SpyfallGame:
             return "Game not started, cannot get votes"
 
         text = "Current Votes (Majority is {}):\n".format(self.majority)
-        for player in sorted(self.votes.keys(), key=lambda x:len(self.votes[x]), reversed=True):
+        for player in sorted(self.votes.keys(), key=lambda x: len(self.votes[x]), reversed=True):
             if len(self.votes[player]) > 0:
                 text += "{} ({}): {}\n".format(player.username, len(self.votes[player]),
                                                ",".join([p.username for p in self.votes[player]]))
