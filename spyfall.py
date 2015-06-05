@@ -24,9 +24,10 @@ class SpyfallGame:
             return "Cannot start with less than 3 players!"
 
         self.start_time = datetime.now()
+        starting_player = random.choice(list(self.players.keys()))
         self.chat.send_msg("Attention @{} !".format(" @".join([player.username for player in self.players.keys()])))
-        self.chat.send_msg("Starting game with {} players! Majority is {} votes.".format(
-                           len(self.players), self.majority))
+        self.chat.send_msg("Starting game with {} players! Majority is {} votes.\nFirst Up: {}.".format(
+                           len(self.players), self.majority, starting_player.username))
 
         self._assign_roles()
         self.started = True
