@@ -185,6 +185,7 @@ class SpyfallPlugin(TelexPlugin):
     games = {}
 
     def __init__(self):
+        super().__init__()
         self.games = {}
 
         cwd = os.path.dirname(__file__)
